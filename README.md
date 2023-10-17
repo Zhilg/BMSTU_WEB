@@ -16,5 +16,9 @@
 
 ## 3. Use-Case диаграмма
 
-   
+![Use-Case диаграма](./img/use-case.png)
+
+## 4. BPMN
+
+
 
