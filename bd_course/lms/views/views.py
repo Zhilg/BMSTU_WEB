@@ -3,12 +3,21 @@ from django.shortcuts import render, HttpResponseRedirect, redirect, HttpRespons
 from django.contrib.auth import logout
 from django.contrib.auth.models import AnonymousUser
 
+from rest_framework.decorators import api_view, permission_classes, action
+from drf_spectacular.utils import extend_schema, OpenApiTypes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import views, status
+
 from ..backends import EmailBackend
 from lms.boot import *
 
+@api_view(["GET"])
 def index(request):
     return render(request, "index.html")
 
+@api_view(["POST"])
 def register(request):
     if request.method == 'POST':
         form = MyUserCreationForm(request.POST)
@@ -24,6 +33,8 @@ def register(request):
         form = MyUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def login(request):
     if request.method == 'POST':
         
@@ -42,6 +53,9 @@ def login(request):
         
     return render(request, 'registration/login.html', {'form': form})
 
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def change_password(request):
     print(request.user)
     if request.user == AnonymousUser:
@@ -63,10 +77,12 @@ def change_password(request):
         form = ChangePasswordForm()
     return render(request, 'registration/change_password.html', {'form': form})
 
+@api_view(["GET"])
 def view(request):
     print(request.user)
     return render(request, "view.html")
-    
+
+@api_view(["GET"])
 def check(request):
     MODEL_HEADERS=[f.name for f in Tasks._meta.get_fields()[4:]]
     query_results = [list(i.values()) for i in list(Tasks.objects.all().values())]
@@ -75,6 +91,9 @@ def check(request):
             "model_headers" : MODEL_HEADERS
         })
     
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def create_taskpacks(request):
     # Может делать только учитель
     # Выбирает группу, и для каждого студента этой группы делается пак заданий темы учителя
@@ -104,6 +123,7 @@ def create_taskpacks(request):
         HttpResponseRedirect(request.META.get('HTTP_REFERER').replace('/create_taskpacks?', ''))
     return render(request, 'create_taskpacks.html', {'form': form})
 
+@api_view(["GET"])
 def show_taskpacks(request):
     if request.user != AnonymousUser:
         
@@ -115,7 +135,8 @@ def show_taskpacks(request):
                 })
             
     return HttpResponse('У анонимного пользователя нет никаких комплектов')
-        
+
+@api_view(["GET"])
 def show_solutions(request):
     if request.user != AnonymousUser:
         SOLUTIONS_HEADER, SOLUTIONS_QUERY = SM.get_meta_fields(), SM.unpack_fields_values(user=request.user)
@@ -125,6 +146,9 @@ def show_solutions(request):
             })
     return HttpResponse('bruh')
 
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def upload_solutions(request):
     if request.user == AnonymousUser or request.user.grup == 'Teacher':
         return HttpResponseRedirect('/login')
@@ -146,6 +170,8 @@ def upload_solutions(request):
     return render(request, 'upload_solutions.html', {'form': form})
 
     
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def upload_tasks(request):
     if request.user == AnonymousUser or request.user.grup != 'Teacher':
         return HttpResponseRedirect('/login')
@@ -163,6 +189,9 @@ def upload_tasks(request):
         form = UploadTask()
     return render(request, 'upload_tasks.html', {'form': form})
 
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def grade_solutions(request):
     if request.user.grup != 'Teacher':
         return HttpResponseRedirect('/login')
@@ -188,6 +217,9 @@ def grade_solutions(request):
     # Достать все решения для учителя у которых нет оценки
     # Ввести форму для оценки 
 
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def logout_view(request):
     logout(request)
     
