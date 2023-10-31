@@ -47,9 +47,9 @@
 ![](./img/components.png)
 
 ## 9. Черновые эксизы страниц
-![](./img/design_1.png)
-![](./img/design_2.png)
-![](./img/design_3.png)
+![](./img/design_1.jpg)
+![](./img/design_2.jpg)
+![](./img/design_3.jpg)
 
 
 
