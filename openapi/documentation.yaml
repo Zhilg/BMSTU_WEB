@@ -1,0 +1,79 @@
+openapi: "3.0.2"
+info:
+  title: LMS
+  version: "1.0"
+servers:
+  - url: http://127.0.0.1:8000/api/v1
+    desription: dev
+tags:
+  - name: auth
+    description: Authorisation
+  - name: user
+    description: Users
+  - name: taskpacks
+    description: TaskPacks
+  - name: tasks
+    description: Tasks
+  - name: solutions
+    description: Solutions
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - login
+                - password
+              properties:
+                login:
+                  type: string
+                  format: email
+                  example: "email@domain.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password1"
+      responses:
+        200:
+          description: Successful operation
+        400:
+          description: Bad request
+        401:
+          description: Invalid login or password
+        500:
+          description: Failed
+  /auth/register:
+    tags:
+      - auth
+    summary: Registration
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - password
+              - username
+              - group
+            properties:
+              email:
+                type: string
+                format: email
+                example: "email@domain.com"
+              password:
+                type: string
+                format: password
+                example: "password1"
+              username:
+                type: string
+                example: "V. V. Putin"
+              group:
+                type: string
+                example: "IU7-71B"

@@ -1,0 +1,53 @@
+<table>
+    <tr>
+    {% for item in model_headers %}
+    <th>{{ item }}</th>
+    {% endfor %}
+    </tr>
+    {% for all_rows in query_results %}
+    <tr> 
+    {% for every_column in all_rows %}
+    <td>{{ every_column }}</td>
+    {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
+<form action='change_password' method='GET'>
+    <button type='submit'>Смена пароля</button>
+</form>
+
+<form action='show_taskpacks' method='GET'>
+    <button type='submit'>Показать комплекты заданий</button>    
+</form>
+
+<form action='show_solutions' method='GET'>
+    <button type='submit'>Просмотр решений</button>    
+</form>
+
+{% if user.grup != "Teacher" %}
+<form action='upload_solutions' method='GET'>
+    <button type='submit'>Загрузка решений</button>    
+</form>
+{% endif %}
+
+{% if user.grup == "Teacher" %}
+<form action='create_taskpacks' method='GET'>
+    <button type='submit'>Создание комплектов</button>    
+</form>
+<form action='upload_tasks' method='GET'>
+    <button type='submit'>Загрузка заданий</button>    
+</form>
+<form action='grade_solutions' method='GET'>
+    <button type='submit'>Оценка решений</button>    
+</form>
+
+{% endif %}
+
+<form action="{% url 'logout_view' %}" method='POST'>
+    {% csrf_token %}
+    <button type='submit'>Выход</button>    
+</form>
+
+
+    

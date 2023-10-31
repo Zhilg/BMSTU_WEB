@@ -1,0 +1,9 @@
+{% block content %}
+<h2>Создать комплекты заданий</h2> <form method="post"> {% csrf_token %} {{ form.as_p }}
+     <button type="submit">Создать</button> </form> {% endblock %}
+
+<a href="{{request.META.HTTP_REFERER}}">
+     <button type="submit">Назад</button>     
+</a>
+
+     
