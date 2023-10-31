@@ -1,26 +1,17 @@
-openapi: "3.0.2"
+openapi: "3.0.3"
 info:
   title: LMS
-  version: "1.0"
+  version: 1.0
 servers:
   - url: http://127.0.0.1:8000/api/v1
     desription: dev
 tags:
-  - name: auth
-    description: Authorisation
-  - name: user
-    description: Users
-  - name: taskpacks
-    description: TaskPacks
-  - name: tasks
-    description: Tasks
-  - name: solutions
-    description: Solutions
+  - name: view
+    description: Views
 paths:
-  /auth/login:
+  /login:
     post:
       tags:
-        - auth
       summary: Login
       requestBody:
         content:
@@ -48,32 +39,315 @@ paths:
           description: Invalid login or password
         500:
           description: Failed
-  /auth/register:
-    tags:
-      - auth
-    summary: Registration
-    requestBody:
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - email
-              - password
-              - username
-              - group
-            properties:
-              email:
-                type: string
-                format: email
-                example: "email@domain.com"
-              password:
-                type: string
-                format: password
-                example: "password1"
-              username:
-                type: string
-                example: "V. V. Putin"
-              group:
-                type: string
-                example: "IU7-71B"
+  /register:
+    post:
+      tags:
+      summary: Registration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - username
+                - group
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "email@domain.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password1"
+                username:
+                  type: string
+                  example: "V. V. Putin"
+                group:
+                  type: string
+                  example: "IU7-71B"
+    responses:
+      200:
+        description: Successful operation
+      400:
+        description: Bad request
+      500:
+        description: Failed
+  /logout:
+    delete:
+      tags:
+        - auth
+      summary: Logout
+      responses:
+        204:
+          description: Successful operation
+  
+  /view/:
+    get:
+      tags:
+        - view
+      summary: Show main page
+      responses:
+        200:
+          description: Successful operation
+  
+  /view/change_password/:
+    post:
+      tags:
+        - view
+        summary: Change password
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - old_password
+                  - new_password
+                properties:
+                  old_password:
+                    type: string
+                    format: password
+                    example: "password_old"
+                  new_password:
+                    type: string
+                    format: password
+                    example: "password_new"
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+  
+  /view/show_tasks:
+    get:
+      tags:
+        - view
+        summary: Show all tasks
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+
+  /view/show_tasks/{id}:
+    get:
+      tags:
+        - view
+        summary: Show some task
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: int
+                    example: 1
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+  
+  /view/upload_tasks:
+    post:
+      tags:
+        - view
+        summary: Upload task
+        requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - file
+                    - theme
+                  properties:
+                    file:
+                      type: file
+                      example: "MathematicsTriangleArea1.pdf"
+                    theme:
+                      type: string
+                      example: "Mathematics"
+  
+  /view/create_taskpacks:
+    post:
+      tags:
+        - view
+        summary: Create taskpacks
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - group
+                  - n
+                  - theme
+                  - duetime
+                properties:
+                  group:
+                    type: string
+                    example: "IU7-71B"
+                  n:
+                    type: integer
+                    format: password
+                    example: 1000
+                  theme:
+                    type: string
+                    example: "Mathematics"
+                  duetime:
+                    type: string
+                    format: date
+                    example: "03/11/2023"
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+  
+  /view/show_taskpacks:
+    get:
+      tags:
+        - view
+        summary: Show all taskpacks
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+  
+  /view/show_taskpacks/{id}:
+    get:
+      tags:
+        - view
+        summary: Show some task
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: int
+                    example: 1
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+  
+  /view/upload_solution:
+    post:
+      tags:
+        - view
+        summary: Create solution
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - file
+                  - taskpackid
+                properties:
+                  file:
+                    type: file
+                    example: Maths.txt
+                  taskpacksid:
+                    type: int
+                    example: 1
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+
+  /view/show_solutions:
+    get:
+      tags:
+        - view
+        summary: Show all solutions
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+
+  /view/show_solutions/{id}:
+    get:
+      tags:
+        - view
+        summary: Show some task
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: int
+                    example: 1
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+
+  /view/grade_solutions:
+    post:
+      tags:
+        - view
+        summary: Grade solutions
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - grade
+                properties:
+                  id:
+                    type: int
+                    example: 1
+                  grade: 
+                    type: int
+                    example: 2
+        responses:
+          200:
+            description: Successfull operation
+          400:
+            description: Bad request
+          500: 
+            description: Failed
+
+
+
