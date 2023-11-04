@@ -1,17 +1,20 @@
 openapi: "3.0.3"
 info:
   title: LMS
-  version: 1.0
+  version: "1.0"
 servers:
   - url: http://127.0.0.1:8000/api/v1
-    desription: dev
 tags:
-  - name: view
-    description: Views
+  - name: auth
+  - name: UserProfiles
+  - name: Tasks
+  - name: TaskPacks
+  - name: Solutions
 paths:
-  /login:
+  /auth/login:
     post:
       tags:
+        - auth
       summary: Login
       requestBody:
         content:
@@ -39,10 +42,12 @@ paths:
           description: Invalid login or password
         500:
           description: Failed
-  /register:
+  /auth/register:
     post:
       tags:
-      summary: Registration
+        - auth
+      summary: Register
+      description: Register
       requestBody:
         content:
           application/json:
@@ -51,31 +56,31 @@ paths:
               required:
                 - email
                 - password
-                - username
+                - name
                 - group
               properties:
                 email:
                   type: string
                   format: email
-                  example: "email@domain.com"
+                  example: "login"
                 password:
                   type: string
                   format: password
-                  example: "password1"
-                username:
+                  example: "password"
+                name:
                   type: string
-                  example: "V. V. Putin"
+                  example: "Putin V. V."
                 group:
                   type: string
                   example: "IU7-71B"
-    responses:
-      200:
-        description: Successful operation
-      400:
-        description: Bad request
-      500:
-        description: Failed
-  /logout:
+      responses:
+        200:
+          description: Successful operation
+        400:
+          description: Bad request
+        500:
+          description: Failed
+  /auth/logout:
     delete:
       tags:
         - auth
@@ -83,271 +88,260 @@ paths:
       responses:
         204:
           description: Successful operation
-  
-  /view/:
+
+  /userprofiles:
+    post:
+      tags:
+        - UserProfiles
+      summary: Create user profile
+      operationId: storeUserProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+                - group
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "login"
+                password:
+                  type: string
+                  format: password
+                  example: "password"
+                name:
+                  type: string
+                  example: "Putin V. V."
+                group:
+                  type: string
+                  example: "IU7-71B"
+      responses:
+        201:
+          description: Successful operation
+          headers:
+            Location:
+              description: URI of created user
+              schema:
+                type: string
+                format: URI
+                example: http://localhost:8080/api/v1/users/1
+        500:
+          description: Failed
+
     get:
       tags:
-        - view
-      summary: Show main page
+        - UserProfiles
+      summary: Get all users
+      operationId: indexUser
       responses:
         200:
           description: Successful operation
-  
-  /view/change_password/:
-    post:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+                      minimum: 1
+                      example: 1
+                    email:
+                      type: string
+                      example: "email@domain.com"
+                    name:
+                      type: string
+                      example: "Putin V. V."
+                    group:
+                      type: string
+                      example: "IU7-71B"
+                    isStaff:
+                      type: boolean
+                      example: true
+        400:
+          description: Bad request
+        500:
+          description: Failed
+  /userprofiles/{id}:
+    get:
       tags:
-        - view
-        summary: Change password
-        requestBody:
+        - UserProfiles
+      summary: Get user
+      operationId: showUser
+      responses:
+        200:
+          description: Successful operation
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - old_password
-                  - new_password
-                properties:
-                  old_password:
-                    type: string
-                    format: password
-                    example: "password_old"
-                  new_password:
-                    type: string
-                    format: password
-                    example: "password_new"
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-  
-  /view/show_tasks:
-    get:
-      tags:
-        - view
-        summary: Show all tasks
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-
-  /view/show_tasks/{id}:
-    get:
-      tags:
-        - view
-        summary: Show some task
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - id
                 properties:
                   id:
-                    type: int
+                    type: integer
+                    format: int64
+                    minimum: 1
                     example: 1
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-  
-  /view/upload_tasks:
-    post:
-      tags:
-        - view
-        summary: Upload task
-        requestBody:
-            content:
-              application/json:
-                schema:
-                  type: object
-                  required:
-                    - file
-                    - theme
-                  properties:
-                    file:
-                      type: file
-                      example: "MathematicsTriangleArea1.pdf"
-                    theme:
-                      type: string
-                      example: "Mathematics"
-  
-  /view/create_taskpacks:
-    post:
-      tags:
-        - view
-        summary: Create taskpacks
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - group
-                  - n
-                  - theme
-                  - duetime
-                properties:
+                  email:
+                    type: string
+                    example: "email@domain.com"
+                  name:
+                    type: string
+                    example: "Putin V. V."
                   group:
                     type: string
                     example: "IU7-71B"
-                  n:
-                    type: integer
+                  isStaff:
+                    type: boolean
+                    example: true
+        400:
+          description: Bad request
+        404:
+          description: Not found
+        500:
+          description: Failed
+      parameters:
+        - in: query
+          name: full
+          schema:
+            type: boolean
+            example: true
+    put:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - UserProfiles
+      summary: Update user
+      operationId: updateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+                - group
+                - isStaff
+              properties:
+                email:
+                  type: string
+                  example: "login"
+                password:
+                  type: string
+                  format: password
+                  example: "password"
+                name:
+                  type: string
+                  example: "Putin V. V."
+                group:
+                  type: string
+                  example: "IU7-71B"
+                isStaff:
+                  type: boolean
+                  example: true
+      responses:
+        204:
+          description: Successful operation
+        400:
+          description: Bad request
+        404:
+          description: Not found
+        500:
+          description: Failed
+
+    delete:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - UserProfiles
+      summary: Delete user profile
+      operationId: deleteUser
+      responses:
+        204:
+          description: Successful operation
+        404:
+          description: Not found
+        500:
+          description: Failed
+
+    patch:
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - UserProfiles
+      summary: Update credentials
+      operationId: patchUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+                - group
+                - isStaff
+              properties:
+                email:
+                  type: string
+                  example: "login"
+                password:
+                  type: string
+                  format: password
+                  example: "password"
+                name:
+                  type: string
+                  example: "Putin V. V."
+                group:
+                  type: string
+                  example: "IU7-71B"
+                isStaff:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    example: "login"
+                  password:
+                    type: string
                     format: password
-                    example: 1000
-                  theme:
+                    example: "password"
+                  name:
                     type: string
-                    example: "Mathematics"
-                  duetime:
+                    example: "Putin V. V."
+                  group:
                     type: string
-                    format: date
-                    example: "03/11/2023"
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-  
-  /view/show_taskpacks:
-    get:
-      tags:
-        - view
-        summary: Show all taskpacks
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-  
-  /view/show_taskpacks/{id}:
-    get:
-      tags:
-        - view
-        summary: Show some task
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - id
-                properties:
-                  id:
-                    type: int
-                    example: 1
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-  
-  /view/upload_solution:
-    post:
-      tags:
-        - view
-        summary: Create solution
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - file
-                  - taskpackid
-                properties:
-                  file:
-                    type: file
-                    example: Maths.txt
-                  taskpacksid:
-                    type: int
-                    example: 1
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
+                    example: "IU7-71B"
+                  isStaff:
+                    type: boolean
+                    example: true
+        404:
+          description: Not found
+        500:
+          description: Failed
 
-  /view/show_solutions:
-    get:
-      tags:
-        - view
-        summary: Show all solutions
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-
-  /view/show_solutions/{id}:
-    get:
-      tags:
-        - view
-        summary: Show some task
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - id
-                properties:
-                  id:
-                    type: int
-                    example: 1
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-
-  /view/grade_solutions:
-    post:
-      tags:
-        - view
-        summary: Grade solutions
-        requestBody:
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - id
-                  - grade
-                properties:
-                  id:
-                    type: int
-                    example: 1
-                  grade: 
-                    type: int
-                    example: 2
-        responses:
-          200:
-            description: Successfull operation
-          400:
-            description: Bad request
-          500: 
-            description: Failed
-
-
-
+    parameters:
+      - in: path
+        name: id
+        description: ID of user
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
