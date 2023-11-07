@@ -747,12 +747,6 @@ paths:
           description: Not found
         500:
           description: Failed
-      parameters:
-        - in: query
-          name: full
-          schema:
-            type: boolean
-            example: true
 
     delete:
       security:
