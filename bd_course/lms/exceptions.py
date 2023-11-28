@@ -21,3 +21,6 @@ class NoSuchTaskPacks(Exception):
 
 class WrongTaskPackID(Exception):
     pass
+
+class WrongGrades(Exception):
+    pass

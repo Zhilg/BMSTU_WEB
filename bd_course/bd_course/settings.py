@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "drf_spectacular"
+    "rest_framework",
+    "drf_yasg"
 ]
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'

@@ -13,22 +13,36 @@ class UserProfilesRepository(BaseRep):
             return self.model.objects.filter(pk=user_id)
         if email is not None:
             return self.model.objects.filter(email=email)
+        return self.model.objects.all()
         
+    def update(self, instance, validated_data):
+        instance.email = validated_data.get('email')
+        instance.username = validated_data.get('username')
+        instance.grup = validated_data.get('grup')
+        instance.is_staff = validated_data.get('is_staff')
 
-    def update(self, form, user):
-        old = form['old_password']
-        new = form['new_password']
-        if user.check_password(old):
-            user.set_password(new)
-            user.save()
-            return user
+        password = validated_data.get('password')
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance
+    
+    def update_password(self, instance, validated_data):
+        old = validated_data.get('old_password')
+        new = validated_data.get('new_password')
+        if instance.check_password(old):
+            instance.set_password(new)
+            instance.save()
+            return instance
         else:
+            print(instance.password)
             raise ValueError
     
     def insert(self, form, **extra_fields):
         email = form['email']
         username = form['username']
-        grup = form['group']
+        grup = form['grup']
         password = form['password']
         
         user = self.model(
@@ -53,8 +67,10 @@ class TasksRepository(BaseRep):
     def update(self, form):
         pass
     
-    def get(self, filename):
-        return self.model.objects.filter(filename=filename)
+    def get(self, filename=None, id=None):
+        if id:
+            return self.model.objects.filter(id=id)
+        return self.model.objects.filter(filename=filename) if filename else self.model.objects.all()
         
     
 class TaskPacksRepository(BaseRep):
@@ -68,15 +84,21 @@ class TaskPacksRepository(BaseRep):
             return self.model.objects.filter(student=student)
         if id is not None:
             return self.model.objects.filter(pk=id)
+        else:
+            return self.model.objects.all()
     
     def update(self, form):
         pass
         
     def insert(self, form, user):
-        N = form['N']
+        N = form['n']
         if N <= 0:
             raise NonPositiveNException
-            
+        
+        maxgrade, mingrade = form['maxgrade'], form['mingrade']
+        if maxgrade < 0 or mingrade < 0 or maxgrade < mingrade:
+            raise WrongGrades
+        
         student_ids = UserProfiles.objects.filter(grup=form['group'])# Все id студентов какой-то группы
         if not student_ids.__len__():
             raise NoSuchGroupException
@@ -98,10 +120,10 @@ class TaskPacksRepository(BaseRep):
         ret_list = []
         
         for student in student_ids:
-            pack = self.model(student = student, teacher=teacher, duetime=duetime)
+            pack = self.model(student = student, teacher=teacher, duetime=duetime, maxgrade=maxgrade, mingrade=mingrade)
             pack.save()
             ret_list.append(pack)
-            pack.tasks.add(*choices(tasks_ids, k=form['N']))
+            pack.tasks.add(*choices(tasks_ids, k=form['n']))
         
         return ret_list
     
@@ -109,11 +131,14 @@ class SolutionsRepository(BaseRep):
     def __init__(self) -> None:
         self.model = Solutions
         
-    def get(self, teacher=None, student=None):
+    def get(self, teacher=None, student=None, id=None):
+        if id:
+            return self.model.objects.filter(id=id)
         if teacher is not None:
             return self.model.objects.filter(teacher=teacher)
         if student is not None:
             return self.model.objects.filter(student=student)
+        return self.model.objects.all()
         
     def insert(self, form, user):
         taskpacksid = form['taskpackid']
@@ -137,9 +162,7 @@ class SolutionsRepository(BaseRep):
         solution.save()
         return solution
     
-    def update(self, form):
-        id = form.cleaned_data['solutionid']
-        solution = self.model.objects.get(id=id)
-        grade = form.cleaned_data['grade']
-        solution.grade = grade
-        solution.save()
+    def update(self, form, instance):
+        instance.grade = form['grade']
+        instance.save()
+        return instance

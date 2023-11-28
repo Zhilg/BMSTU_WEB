@@ -2,26 +2,33 @@ from django.urls import path, include
 
 from .views import views
 from drf_spectacular.views import SpectacularAPIView
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="LMS",
+        default_version="v1",
+        description="BMSTU_WEB COURSE",
+        
+    ),
+    public=True
+)
 
 urlpatterns = [
-    path("register/", views.register, name='register'),
-    path("schema/", SpectacularAPIView.as_view(), name='schema'),
-        
-path("", views.index, name="index"),
-path("view/", views.view, name="view"),
-path("view/check", views.check, name="check"),
-path("view/create_taskpacks", views.create_taskpacks, name="create_taskpacks"),
-path("view/show_taskpacks", views.show_taskpacks, name="show_taskpacks"),
-path("view/show_solutions", views.show_solutions, name="show_solutions"),
-
-path("view/upload_tasks", views.upload_tasks, name="upload_tasks"),
-path("view/upload_solutions", views.upload_solutions, name="upload_solutions"),
-path("view/grade_solutions", views.grade_solutions, name="grade_solutions"),
-
-path('login/', views.login, name='login'),
-path('view/change_password/', views.change_password, name='change_password'),
-
-path('logout/', views.logout_view, name='logout_view')
+    path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path("auth/register", views.UserRegisterView.as_view(), name='register'),
+    path("auth/login", views.UserLoginView.as_view(), name="login"),
+    path('auth/logout', views.LogoutView.as_view(), name='logout_view'),
+    
+    path("userprofiles", views.UserProfilesView.as_view(), name='list_users'),
+    path("userprofiles/<int:id>", views.SingleUserView.as_view()),
+    path("tasks", views.TasksView.as_view()),
+    path("tasks/<int:id>", views.SingleTaskView.as_view()),
+    path("taskpacks", views.TaskPacksView.as_view()),
+    path("taskpacks/<int:id>", views.SingleTaskPackView.as_view()),
+    path("solutions", views.SolutionsView.as_view()),
+    path("solutions/<int:id>", views.SingleSolutionView.as_view()),
     
 ]
 

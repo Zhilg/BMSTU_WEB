@@ -1,10 +1,10 @@
 from django.contrib.auth.backends import BaseBackend
-from lms.repositories.repositories import UserProfilesRepository
+from lms.boot import UPM
 
 class EmailBackend(BaseBackend):
     def authenticate(self, email=None, password=None, **kwargs):
         
-        user = UserProfilesRepository().model.objects.filter(email=email).first()
+        user = UPM.get(email=email)[0]
         print(user)
         if user is None:
             return None
@@ -14,8 +14,7 @@ class EmailBackend(BaseBackend):
 
     def get_user(self, user_id):
         try:
-            return UserProfilesRepository().model.objects.filter(pk=user_id).first()
+            return UPM.get(id=user_id).first()
 
-        except UserProfilesRepository().model.DoesNotExist:
-            print("MODEL DOES NOT EXIST\n\n")
+        except UPM.rep.model.DoesNotExist:
             return None

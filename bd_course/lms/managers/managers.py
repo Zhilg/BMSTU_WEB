@@ -16,7 +16,8 @@ class UserProfilesManager(BaseUserManag, BaseUserManager):
         self.rep = None
         
     def create(self, form, **extra_fields):
-        if self.get(form['email']):
+ 
+        if self.get(email=form['email']):
             raise ValueError
         user = self.rep.insert(form, **extra_fields)
         return user
@@ -32,27 +33,38 @@ class UserProfilesManager(BaseUserManag, BaseUserManager):
 
         return self.rep.insert(email, username, grup, password, **extra_fields)
     
-    def get(self, email):
-        try:
-            return self.rep.get(email)
-        except self.rep.model.DoesNotExist:
-            return None
+    def get(self, id=None, email=None):
+        if id:
+            try:
+                return self.rep.get(user_id=id)
+            except self.rep.model.DoesNotExist:
+                return None
+        if email:
+            try:
+                return self.rep.get(email=email)
+            except self.rep.model.DoesNotExist:
+                return None
+ 
+        return self.rep.get()
         
-    def auth_user(self, form, request, backend):
-        email = self.normalize_email(form['email'])
-        password = form['password']
-        print(request.user)
-        print("BEFORE BACKEND")
-        user = backend.authenticate(request=request, email=email, password=password)
-        print(user)
-        if user is not None and user.is_active:
-            print("logineedddd")
+    def auth_user(self, email, password, request):
+        email = self.normalize_email(email)
+        user = self.get(email=email)[0]
+        if user is None:
+            return ValueError
+        if not user.is_active:
+            raise KeyError
+        if user.check_password(password):
             login(request, user, backend="lms.backends.EmailBackend")
+            return user
         else:
             raise ValueError
     
-    def change_password(self, form, user):
-        return self.rep.update(form, user)
+    def update(self, instance, validated_data):
+        return self.rep.update(instance, validated_data)
+        
+    def change_password(self, instance, validated_data):
+        return self.rep.update_password(instance, validated_data)
         
         
 
@@ -67,6 +79,11 @@ class TasksManager(BaseManag, models.Model):
         if query.__len__():
             raise FileAlreadyExists
         return self.rep.insert(form)
+    
+    def get(self, filename=None, id=None):
+        query = self.rep.get(filename, id)
+        print(query)
+        return query
         
         
 class TaskPacksManager(BaseManag, models.Model):
@@ -76,11 +93,17 @@ class TaskPacksManager(BaseManag, models.Model):
     def create(self, form, user):
         return self.rep.insert(form, user)
             
-    def get(self, user):
+    def get(self, user=None, id=None):
+        if id:
+            print(id)
+            print(self.rep.get(id=id))
+            return self.rep.get(id=id)
+        if not user:
+            return self.rep.get()
         if user.grup == 'Teacher':
-            TASKPACKS_QUERY = list(self.rep.get(teacher=user.id).values())
+            TASKPACKS_QUERY = self.rep.get(teacher=user.id)
         else:
-            TASKPACKS_QUERY = list(self.rep.get(student=user.id).values())
+            TASKPACKS_QUERY = self.rep.get(student=user.id)
         return TASKPACKS_QUERY
     
     def unpack_fields_values(self, user):
@@ -96,17 +119,21 @@ class SolutionsManager(BaseManag, models.Model):
         super().__init__()
     
     def create(self, user, form):
-        self.rep.insert(form, user)
+        return self.rep.insert(form, user)
         
-    def update(self, form):
-        self.rep.update(form)
+    def update(self, form, instance):
+        return self.rep.update(form, instance)
         
-    def get(self, user):
-        if user.grup == 'Teacher':
-            SOLUTIONS_QUERY = list(self.rep.get(teacher=user.id).values())
-        else:
-            SOLUTIONS_QUERY = list(self.rep.get(student=user.id).values())
-        return SOLUTIONS_QUERY
+    def get(self, user=None, id=None):
+        if id:
+            return self.rep.get(id=id)
+        if user:
+            if user.grup == 'Teacher':
+                SOLUTIONS_QUERY = self.rep.get(teacher=user.id)
+            else:
+                SOLUTIONS_QUERY = self.rep.get(student=user.id)
+            return SOLUTIONS_QUERY
+        return self.rep.get()
     
     def get_meta_fields(self):
         return [f.name for f in self.rep.model._meta.get_fields()]

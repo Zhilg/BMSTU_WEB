@@ -1,226 +1,470 @@
 from lms.forms.forms import *
 from django.shortcuts import render, HttpResponseRedirect, redirect, HttpResponse
-from django.contrib.auth import logout
+
 from django.contrib.auth.models import AnonymousUser
 
-from rest_framework.decorators import api_view, permission_classes, action
-from drf_spectacular.utils import extend_schema, OpenApiTypes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework import views, status
+from lms.responses import *
+from django.contrib.auth import logout
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+from lms.serials.sers import UserProfilesSerializer, UserAuthSerializer, TasksSerializer, TaskPacksSerializer, TaskPacksModelSerializer, SolutionsModelSerializer, SolutionsSerializer
+
 
 from ..backends import EmailBackend
 from lms.boot import *
 
-@api_view(["GET"])
-def index(request):
-    return render(request, "index.html")
-
-@api_view(["POST"])
-def register(request):
-    if request.method == 'POST':
-        form = MyUserCreationForm(request.POST)
-        if form.is_valid():
-            try:
-                UPM.create(form=form.clean())
-            except ValueError:
-                form.add_error(None, 'Такой пользователь уже существует')
-        else:
-            form.add_error(None, "Форма заполнена неправильно")        
+class UserLoginView(APIView):
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"invalid login or password", 500:'failed'},
+                        request_body=openapi.Schema
+                        (
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "email":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='email@domain.com'
+                                ),
+                                "password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password'
+                                )
+                            },
+                            required=['email', 'password']
+                        ))
+    def post(self, request):        
+        serializer = UserAuthSerializer(data=request.data, context={"request":request})
+        if serializer.is_valid():
+            return Response({'message': 'Успешный вход в систему.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    else:
-        form = MyUserCreationForm()
-    return render(request, 'registration/register.html', {'form': form})
+class UserRegisterView(APIView):
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 500:'failed'},
+                        request_body=openapi.Schema
+                        (
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "email":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='email100@domain.com'
+                                ),
+                                "password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password'
+                                ),
+                                "username" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='V.V.Putin'
+                                ),
+                                "grup" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='IU7-71B'
+                                )
+                            },
+                            required=['email', 'password', "username", "grup"]
+                        ))
+    def post(self, request):
+        serializer = UserProfilesSerializer(data=request.data, partial=True)
+        if serializer.is_valid():
+            user_profile = serializer.save()
+            response_data = {'message': 'Successful operation'}
+            response_headers = {'Location': f'http://localhost:8000/api/v1/users/{user_profile.id}'}
+            return Response(status=status.HTTP_201_CREATED, data=response_data, headers=response_headers)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def login(request):
-    if request.method == 'POST':
-        
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            try:       
-                UPM.auth_user(request=request, form=form.clean(), backend=EmailBackend())
-                print(request.user)
-                return redirect('/view')
-            except ValueError:
-                form.add_error(None, 'Incorrect email or password')
-        else:
-            form.add_error(None, "Форма заполнена неправильно")  
-    else:
-        form = LoginForm()
-        
-    return render(request, 'registration/login.html', {'form': form})
+class LogoutView(APIView):
+    @swagger_auto_schema(responses={204: "successfull operation"})
+    def delete(self, request):
+        logout(request)
+        return OK
 
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def change_password(request):
-    print(request.user)
-    if request.user == AnonymousUser:
-        return redirect('/login')
-
-    if request.method == 'POST':
-        
-        form = ChangePasswordForm(request.POST)
-        if form.is_valid():
-            try:
-                print(request.user)
-                UPM.change_password(form.clean(), request.user)
-                return HttpResponseRedirect('/view')
-            except ValueError:
-                form.add_error(None, 'Incorrect password')
-        else:
-            form.add_error(None, "Форма заполнена неправильно")  
-    else:
-        form = ChangePasswordForm()
-    return render(request, 'registration/change_password.html', {'form': form})
-
-@api_view(["GET"])
-def view(request):
-    print(request.user)
-    return render(request, "view.html")
-
-@api_view(["GET"])
-def check(request):
-    MODEL_HEADERS=[f.name for f in Tasks._meta.get_fields()[4:]]
-    query_results = [list(i.values()) for i in list(Tasks.objects.all().values())]
-    return render(request, "view.html", {
-            "query_results" : query_results,
-            "model_headers" : MODEL_HEADERS
-        })
+class UserProfilesView(APIView):
+    @swagger_auto_schema(responses={200: "success", 400:"bad request", 500:'failed'})
+    def get(self, request):
+        user_profiles = UPM.get()
+        serializer = UserProfilesSerializer(user_profiles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 500:'failed'},
+                        request_body=openapi.Schema
+                        (
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "email":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='email100@domain.com'
+                                ),
+                                "password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password'
+                                ),
+                                "username" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='V.V.Putin'
+                                ),
+                                "grup" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='IU7-71B'
+                                )
+                            },
+                            required=['email', 'password', "username", "grup"]
+                        ))
+    def post(self, request):
+        serializer = UserProfilesSerializer(data=request.data, partial=True)
+        if serializer.is_valid():
+            user_profile = serializer.save()
+            response_data = {'message': 'Successful operation'}
+            response_headers = {'Location': f'http://localhost:8000/api/v1/users/{user_profile.id}'}
+            return Response(status=status.HTTP_201_CREATED, data=response_data, headers=response_headers)
 
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def create_taskpacks(request):
-    # Может делать только учитель
-    # Выбирает группу, и для каждого студента этой группы делается пак заданий темы учителя
-    # Входные данные - группа, количество заданий, тема
-    if request.user == AnonymousUser or request.user.grup != 'Teacher':
-        return HttpResponseRedirect('/view')
-    if request.method == 'POST':
-        form = CreateTaskPacks(request.POST)
-        if form.is_valid():    
+        return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+
+class SingleUserView(APIView):
+    @swagger_auto_schema(responses={200: "success", 400:"bad request",404:"Not found", 500:'failed'})
+    def get(self, request, id=None):
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        user_profile = UPM.get(id)
+        if not user_profile:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = UserProfilesSerializer(user_profile[0])
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+                        request_body=openapi.Schema
+                        (
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "email":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='email100@domain.com'
+                                ),
+                                "password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password'
+                                ),
+                                "username" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='V.V.Putin'
+                                ),
+                                "grup" : openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='IU7-71B'
+                                ),
+                                "is_staff" : openapi.Schema(
+                                    type=openapi.TYPE_BOOLEAN,
+                                    example=False
+                                )
+                            },
+                            required=['email', 'password', "name", "group", "is_staff"]
+                        ))
+    def put(self, request, id=None):
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        user_profile = UPM.get(id=id)[0]
+        if not user_profile:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = UserProfilesSerializer(instance=user_profile,data=request.data, partial=True)
+        print(request.data)
+        if serializer.is_valid():
+            serializer.update()
+            return Response(serializer.validated_data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    @swagger_auto_schema(responses={204: "success", 403:"Not permitted", 404:"Not found", 500:'failed'})
+    
+    def delete(self, request, id=None):
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        user_profile = UPM.get(id=id)
+        if user_profile is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        user_profile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+                        request_body=openapi.Schema
+                        (
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "old_password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password'
+                                ),
+                                "password":openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example='password1'
+                                )
+                            },
+                            required=["old_password", "new_password"]
+                        ))
+    
+    def patch(self, request, id=None):
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        user_profile = UPM.get(id=id)[0]
+        if not user_profile:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = UserProfilesSerializer(user_profile, data=request.data, partial=True)
+        if serializer.is_valid():
+
+            serializer.password_update()
+            return Response(serializer.validated_data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+class TasksView(APIView):
+    # permission_classes
+    @swagger_auto_schema(responses={201: "created", 403:"Not permitted", 500:'failed'},
+                    request_body=openapi.Schema
+                    (
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "filename":openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='maths100.txt'
+                            ),
+                            "theme":openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='maths'
+                            )
+                        },
+                        required=["filename", "theme"]
+                    ))
+    def post(self, request):
+        if request.user == AnonymousUser or request.user.grup != 'Teacher':
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = TasksSerializer(data=request.data)
+        if serializer.is_valid():
+            task = serializer.save()
+            response_data = {'message': 'Successful operation'}
+            response_headers = {'Location': f'http://localhost:8000/tasks/{task.id}'}
+            return Response(status=status.HTTP_201_CREATED, data=response_data, headers=response_headers)
+
+ 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @swagger_auto_schema(responses={200: "success", 500:'failed'})
+    def get(self, request):
+        tasks = TM.get()
+        serializer = TasksSerializer(tasks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class SingleTaskView(APIView):
+    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    def get(self, request, id):
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        task = TM.get(id)
+        if not task:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = TasksSerializer(task[0])
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(responses={200: "success",403:"Not permitted", 404:"Not found", 500:'failed'})
+    def delete(self, request, id):
+        if request.user == AnonymousUser or request.user.grup != "Teacher":
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        task = TM.get(id=id)
+        if task is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+ 
+           
+class TaskPacksView(APIView):
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+                    request_body=openapi.Schema
+                    (
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "n":openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                example=1
+                            ),
+                            "duetime":openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='2023-12-29'
+                            ),
+                            "theme":openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='maths'
+                            ),
+                            'group' : openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='IU7-71B'
+                            ),
+                            "maxgrade" : openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                example=10
+                            ),
+                            "mingrade" : openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                example=0
+                            )
+                        },
+                        
+                        required=["n", "duetime", "theme","group","maxgrade","mingrade"]
+                    ))
+    def post(self, request):
+        if request.user == AnonymousUser or request.user.grup != "Teacher":
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = TaskPacksSerializer(data=request.data, partial=True, context={"user":request.user})
+        if serializer.is_valid():    
             try:
-                TPM.create(form.clean(), request.user)
+                taskpack = serializer.save()
+                            
+                response_data = {'message': 'Successful operation'}
+                return Response(status=status.HTTP_201_CREATED, data=response_data)
+
             except NonPositiveNException:
-                form.add_error(None, 'Количество заданий в комплекте не может быть <= 0')
+                return Response({"message": 'Количество заданий в комплекте не может быть <= 0'}, status=status.HTTP_400_BAD_REQUEST)
+            except WrongGrades:
+                return Response({"message": 'Неправильные границы оценки'}, status=status.HTTP_400_BAD_REQUEST)
             except NoSuchGroupException:
-                form.add_error(None, 'Такой группы нет в системе')
+                return Response({"message":'Такой группы нет в системе'},status=status.HTTP_400_BAD_REQUEST)
             except WrongDeadlineException:
-                form.add_error("Неправильный дедлайн данных комплектов")
+                return Response({"message":"Неправильный дедлайн данных комплектов"},status=status.HTTP_400_BAD_REQUEST)
             except NoSuchThemeException:
-                form.add_error(None, 'Заданий с такой темой нет в системе')
+                return Response({"message":'Заданий с такой темой нет в системе'},status=status.HTTP_400_BAD_REQUEST)
             except NotEnoughTasksException:
-                form.add_error(None, 'Недостаточно заданий в системе для формирования комплекта, текущее количество заданий =  {}'.format(len))
+                return Response({"message":'Недостаточно заданий в системе для формирования комплекта'},status=status.HTTP_400_BAD_REQUEST)
 
         else:
-            form.add_error(None, 'Форма заполнена неправильно')
-    else:
-        form = CreateTaskPacks()
-        HttpResponseRedirect(request.META.get('HTTP_REFERER').replace('/create_taskpacks?', ''))
-    return render(request, 'create_taskpacks.html', {'form': form})
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED)
 
-@api_view(["GET"])
-def show_taskpacks(request):
-    if request.user != AnonymousUser:
-        
-        TASKPACKS_HEADER, TASKPACKS_QUERY = TPM.get_meta_fields(), TPM.unpack_fields_values(user=request.user)
-        print(TASKPACKS_HEADER, TASKPACKS_QUERY)
-        return render(request, "showtable.html", {
-                    "query_results" : TASKPACKS_QUERY,
-                    "model_headers" : TASKPACKS_HEADER
-                })
-            
-    return HttpResponse('У анонимного пользователя нет никаких комплектов')
+    @swagger_auto_schema(responses={200: "success", 500:'failed'})
+    def get(self, request):
+        taskpacks = TPM.get()
+        print(taskpacks)
+        serializer = TaskPacksModelSerializer(taskpacks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class SingleTaskPackView(APIView):
+    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    def get(self, request, id):
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        taskpack = TPM.get(id=id)
+        if not taskpack:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = TaskPacksModelSerializer(taskpack[0])
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    @swagger_auto_schema(responses={200: "success", 403:"Not permitted", 404:"Not found", 500:'failed'})
+    def delete(self, request, id):
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        task = TPM.get(id=id)
+        if task is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(["GET"])
-def show_solutions(request):
-    if request.user != AnonymousUser:
-        SOLUTIONS_HEADER, SOLUTIONS_QUERY = SM.get_meta_fields(), SM.unpack_fields_values(user=request.user)
-        return render(request, "showtable.html", {
-                "query_results" : SOLUTIONS_QUERY,
-                "model_headers" : SOLUTIONS_HEADER
-            })
-    return HttpResponse('bruh')
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def upload_solutions(request):
-    if request.user == AnonymousUser or request.user.grup == 'Teacher':
-        return HttpResponseRedirect('/login')
-    if request.method == 'POST':
-        form = UploadSolutions(request.POST)
-        if form.is_valid():
+class SolutionsView(APIView):
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+                    request_body=openapi.Schema
+                    (
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "taskpackid":openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                example=1
+                            ),
+                            "filename":openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                example='solution1000.txt'
+                            ),
+                        },
+                        
+                        required=["taskpackid", "filename"]
+                    ))
+    def post(self, request):
+        if request.user == AnonymousUser or request.user.grup == 'Teacher':
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = SolutionsSerializer(data=request.data, context={"user":request.user})
+        if serializer.is_valid():
             try:
-                SM.create(request.user, form.clean())
+                sol = serializer.save()
+                response_data = {'message': 'Successful operation'}
+                response_headers = {'Location': f'http://localhost:8000/solutions/{sol.id}'}
+                return Response(status=status.HTTP_201_CREATED, data=response_data, headers=response_headers)
             except FileAlreadyExists:
-                form.add_error(None, "Файл с таким названием уже существует в системе")
+                return Response({"message": "Файл с таким названием уже существует в системе"}, status=status.HTTP_400_BAD_REQUEST)
             except NoSuchTaskPacks:
-                form.add_error(None, "Данного комплекта заданий не существует")
+                return Response({"message": "Данного комплекта заданий не существует"}, status=status.HTTP_404_NOT_FOUND)
             except WrongTaskPackID:
-                form.add_error(None, "Данный комплект заданий не ваш")  
+                return Response({"message": "Данный комплект заданий не ваш"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+
         else:
-            form.add_error(None, "Форма заполнена неправильно")                     
-    else:
-        form = UploadSolutions()
-    return render(request, 'upload_solutions.html', {'form': form})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    @swagger_auto_schema(responses={200: "success",500:'failed'})   
+    def get(self, request):
+        solutio = SM.get()
+        serializer = SolutionsModelSerializer(solutio, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)   
 
+class SingleSolutionView(APIView):
+    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    def get(self, request, id):
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        sol = SM.get(id=id)
+        if not sol:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = SolutionsModelSerializer(sol[0])
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
     
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def upload_tasks(request):
-    if request.user == AnonymousUser or request.user.grup != 'Teacher':
-        return HttpResponseRedirect('/login')
+    @swagger_auto_schema(responses={204: "success",403:"Not permitted", 404:"Not found", 500:'failed'})
+    def delete(self, request, id):
+        if request.user == AnonymousUser :
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        sol = SM.get(id=id)
+        if sol is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        sol.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
-    if request.method == 'POST':
-        form = UploadTask(request.POST)
-        if form.is_valid():
-            try:
-                TM.create(form.clean())
-            except FileAlreadyExists:
-                form.add_error(None, "Файл с таким названием уже существует в системе")
-        else:
-            form.add_error(None, "Форма заполнена неправильно")  
-    else:
-        form = UploadTask()
-    return render(request, 'upload_tasks.html', {'form': form})
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def grade_solutions(request):
-    if request.user.grup != 'Teacher':
-        return HttpResponseRedirect('/login')
-
-    header, query = SM.get_meta_fields(), SM.unpack_fields_values(user=request.user)
-
-    
-    if request.method == 'POST':
-        form = GradeSolutions(request.POST)
-        if form.is_valid():
-            SM.update(form)
-        return render(request, "grade.html", {
-                "query_results" : query,
-                "model_headers" : header,
-                'form': form})
-    else:
-        form = GradeSolutions()
-        return render(request, "grade.html", {
-                "query_results" : query,
-                "model_headers" : header,
-                'form': form
-            })
-    # Достать все решения для учителя у которых нет оценки
-    # Ввести форму для оценки 
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def logout_view(request):
-    logout(request)
-    
-    return HttpResponseRedirect('/login/')
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+                    request_body=openapi.Schema
+                    (
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "grade":openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                example=10
+                            )
+                        },
+                        
+                        required=["grade"]
+                    ))
+    def patch(self, request, id):
+        if request.user == AnonymousUser:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if id is None or id < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        sol = SM.get(id=id)[0]
+        if not sol:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = SolutionsModelSerializer(sol, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.update()
+            return Response(serializer.validated_data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
