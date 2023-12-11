@@ -43,15 +43,15 @@ jobs:
     - name: Run solution tests
       run: |
         cd bd_course
-        python manage.py test lms.solutions_tests
+        python manage.py test lms.tests.solutions_tests
   
     - name: Run taskpacks tests
       run: |
         cd bd_course
-        python manage.py test lms.taskpacks_tests
+        python manage.py test lms.tests.taskpacks_tests
           
     - name: Run userprofiles tests
       run: |
         cd bd_course
-        python manage.py test lms.userprofiles_tests
+        python manage.py test lms.tests.userprofiles_tests
   
