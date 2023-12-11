@@ -1,0 +1,23 @@
+stages:
+  - test
+
+test_solution:
+  stage: test
+  script:
+    - cd bd_course
+    - python3 manage.py tests lms.solutions_tests
+
+test_taskpacks:
+  stage: test
+  script:
+    - cd bd_course
+    - python3 manage.py tests lms.taskpacks_tests
+
+test_userprofiles:
+  stage: test
+  script:
+    - cd bd_course
+    - python3 manage.py tests lms.userprofiles_tests
+
+
+
