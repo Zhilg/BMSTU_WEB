@@ -1,0 +1,54 @@
+name: Tests
+
+on:
+  push:
+    branches:
+    - main 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: —health-cmd pg_isready —health-interval 10s —health-timeout 5s —health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+  
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10
+  
+    - name: Install dependencies
+      run: |
+        python -m pip install —upgrade pip
+        pip install -r requirements.txt
+  
+    - name: Set up PostgreSQL
+      run: |
+        psql -U postgres -c "CREATE DATABASE my database"
+  
+    - name: Run database migrations
+      run: |
+        cd bd_course
+        python manage.py migrate
+  
+    - name: Run solution tests
+      run: |
+        cd bd_course
+        python manage.py test lms.solution_tests
+  
+    - name: Run taskpacks tests
+      run: |
+        cd bd_course
+        python manage.py test lms.taskpacks_tests
+  
