@@ -5,7 +5,10 @@ from lms.boot import UPM
 class UserProfilesTests(TestCase):
     def setUp(self):
         form = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "grup" : "Teacher"}
-        UPM.create(form=form)
+        self.user = UPM.create(form=form)
+        
+    def test_create(self):
+        self.assertIsInstance(self.user, UPM.rep.model)
     
     def test_get(self):
         prof = UPM.get(email='124@mail.ru')[0]

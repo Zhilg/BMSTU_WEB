@@ -24,7 +24,7 @@ class SolutionsTests(TestCase):
         
     def test_create_solution(self):
         solution = SM.create(self.user, self.test_form_1)
-        self.assertIsInstance(solution, SM.model)
+        self.assertIsInstance(solution, SM.rep.model)
         
     def test_file_exists(self):
         try:
@@ -39,7 +39,7 @@ class SolutionsTests(TestCase):
             self.assertTrue(True)
             
     def test_wrong_taskpack(self):
-        form = {'email' : '126@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "group" : "IU7-71B"}
+        form = {'email' : '126@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "grup" : "IU7-71B"}
         user = UPM.create(form=form)
         try:
             SM.create(user, self.test_form_4)
