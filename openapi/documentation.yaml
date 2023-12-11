@@ -103,21 +103,21 @@ paths:
               required:
                 - email
                 - password
-                - name
-                - group
+                - username
+                - grup
               properties:
                 email:
                   type: string
                   format: email
-                  example: "login"
+                  example: "login@domain.com"
                 password:
                   type: string
                   format: password
                   example: "password"
-                name:
+                username:
                   type: string
                   example: "Putin V. V."
-                group:
+                grup:
                   type: string
                   example: "IU7-71B"
       responses:
@@ -156,10 +156,10 @@ paths:
                     email:
                       type: string
                       example: "email@domain.com"
-                    name:
+                    username:
                       type: string
                       example: "Putin V. V."
-                    group:
+                    grup:
                       type: string
                       example: "IU7-71B"
                     isStaff:
@@ -191,10 +191,10 @@ paths:
                   email:
                     type: string
                     example: "email@domain.com"
-                  name:
+                  username:
                     type: string
                     example: "Putin V. V."
-                  group:
+                  grup:
                     type: string
                     example: "IU7-71B"
                   isStaff:

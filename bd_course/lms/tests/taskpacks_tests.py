@@ -1,60 +1,63 @@
 from django.test import TestCase
-from lms.managers.managers import TaskPacksManager, UserProfilesManager, TasksManager
-from datetime import date
+from lms.boot import *
+import datetime as datetime
 from lms.exceptions import *
+
+tomorrow = date.today() + datetime.timedelta(days=1)
+yesterday = date.today() - datetime.timedelta(days=1)
     
 class TaskPacksTests(TestCase):
     def setUp(self):
-        self.form1 = {"N" : -1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : date(2023, 10, 3)}
-        self.form2 = {"N" : 1, "group" : "None", "theme" : "Mathematics", "duetime" : date(2023, 10, 3)}
-        self.form3 = {"N" : 1, "group" : "IU7-61B", "theme" : "None", "duetime" : date(2023, 10, 3)}
-        self.form4 = {"N" : 1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : date(2023, 9, 3)}
-        self.form5 = {"N" : 5, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : date(2023, 10, 3)}
-        self.form6 = {"N" : 1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : date(2023, 10, 3)}
+        self.form1 = {"n" : -1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : tomorrow , "maxgrade" : 10, "mingrade" : 1}
+        self.form2 = {"n" : 1, "group" : "None", "theme" : "Mathematics", "duetime" : tomorrow, "maxgrade" : 10, "mingrade" : 1}
+        self.form3 = {"n" : 1, "group" : "IU7-61B", "theme" : "None", "duetime" : tomorrow, "maxgrade" : 10, "mingrade" : 1}
+        self.form4 = {"n" : 1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : yesterday, "maxgrade" : 10, "mingrade" : 1}
+        self.form5 = {"n" : 5, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : tomorrow, "maxgrade" : 10, "mingrade" : 1}
+        self.form6 = {"n" : 1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : tomorrow, "maxgrade" : 10, "mingrade" : 1}
         
-        form = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "group" : "Teacher"}
-        self.user = UserProfilesManager().create(form=form)
-        form = {'email' : '125@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "group" : "IU7-61B"}
-        UserProfilesManager().create(form=form)
+        form = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "grup" : "Teacher"}
+        self.user = UPM.create(form=form)
+        form = {'email' : '125@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "grup" : "IU7-61B"}
+        UPM.create(form=form)
         form = {"filename" : "asdasdd.txt", "theme" : "Mathematics"}
-        TasksManager().create(form)
+        TM.create(form)
         
     def test_neg_n(self):
         try:
-            TaskPacksManager().create(form=self.form1, user=self.user)
+            TPM.create(form=self.form1, user=self.user)
         except NonPositiveNException:
             self.assertTrue(True, True)
     
     def test_wrong_deadline(self):
         try:
-            TaskPacksManager().create(form=self.form4, user=self.user)
+            TPM.create(form=self.form4, user=self.user)
         except WrongDeadlineException:
             self.assertTrue(True, True)
     
     def test_no_group(self):
         try:
-            TaskPacksManager().create(form=self.form2, user=self.user)
+            TPM.create(form=self.form2, user=self.user)
         except NoSuchGroupException:
             self.assertTrue(True, True)
             
     def test_no_such_theme(self):
         try:
-            TaskPacksManager().create(form=self.form3, user=self.user)
+            TPM.create(form=self.form3, user=self.user)
         except NoSuchThemeException:
             self.assertTrue(True, True)
             
     def test_not_enough_tasks(self):
         try:
-            TaskPacksManager().create(form=self.form5, user=self.user)
+            TPM.create(form=self.form5, user=self.user)
         except NotEnoughTasksException:
             self.assertTrue(True, True)
             
     def test_create_taskpack(self):
         try:
-            TaskPacksManager().create(form=self.form6)
+            TPM.create(form=self.form6)
         except Exception:
             pass
-        self.assertIsNotNone(TaskPacksManager.get_taskpacks(user=self.user))
+        self.assertIsNotNone(TPM.get(user=self.user))
     
     
          

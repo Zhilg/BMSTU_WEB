@@ -143,6 +143,7 @@ class SolutionsRepository(BaseRep):
     def insert(self, form, user):
         taskpacksid = form['taskpackid']
         filename = form['filename']
+        
         query = self.model.objects.filter(filename=filename)
         if query.__len__():
             raise FileAlreadyExists

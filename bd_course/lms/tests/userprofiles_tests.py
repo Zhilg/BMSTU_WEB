@@ -1,19 +1,19 @@
 from django.test import TestCase
-from lms.managers.managers import UserProfilesManager
+from lms.boot import UPM
 
 # Create your tests here.
 class UserProfilesTests(TestCase):
     def setUp(self):
-        form = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "group" : "Teacher"}
-        UserProfilesManager().create(form=form)
+        form = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "grup" : "Teacher"}
+        UPM.create(form=form)
     
     def test_get(self):
-        prof = UserProfilesManager().get_user_by_email(email='124@mail.ru')
-        self.assertIsInstance(prof, UserProfilesManager().model)
+        prof = UPM.get(email='124@mail.ru')[0]
+        self.assertIsInstance(prof, UPM.rep.model)
     
     def test_ch_pas(self):
         form = {"old_password" : "asdasdasd", "new_password" : "12345678"}
-        prof = UserProfilesManager().get_user_by_email(email='124@mail.ru')
-        UserProfilesManager().change_password(form, prof)
+        prof = UPM.get(email='124@mail.ru')[0]
+        UPM.change_password(prof, form)
         self.assertTrue(prof.check_password(form["new_password"]))
         

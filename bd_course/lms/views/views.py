@@ -66,6 +66,7 @@ class UserRegisterView(APIView):
                             required=['email', 'password', "username", "grup"]
                         ))
     def post(self, request):
+        
         serializer = UserProfilesSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             user_profile = serializer.save()
@@ -75,19 +76,23 @@ class UserRegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
-    @swagger_auto_schema(responses={204: "successfull operation"})
+    @swagger_auto_schema(responses={204: "successfull operation", 401:"unauthorized"})
     def delete(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         logout(request)
         return OK
 
 class UserProfilesView(APIView):
-    @swagger_auto_schema(responses={200: "success", 400:"bad request", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 400:"bad request", 401:"unauthorized", 500:'failed'})
     def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         user_profiles = UPM.get()
         serializer = UserProfilesSerializer(user_profiles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 403:"forbidden", 500:'failed'},
                         request_body=openapi.Schema
                         (
                             type=openapi.TYPE_OBJECT,
@@ -112,6 +117,10 @@ class UserProfilesView(APIView):
                             required=['email', 'password', "username", "grup"]
                         ))
     def post(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if request.user.is_staff == False:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = UserProfilesSerializer(data=request.data, partial=True)
         if serializer.is_valid():
             user_profile = serializer.save()
@@ -122,8 +131,10 @@ class UserProfilesView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
 
 class SingleUserView(APIView):
-    @swagger_auto_schema(responses={200: "success", 400:"bad request",404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 400:"bad request", 401:"unauthorized",404:"Not found", 500:'failed'})
     def get(self, request, id=None):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_profile = UPM.get(id)
@@ -132,7 +143,7 @@ class SingleUserView(APIView):
         serializer = UserProfilesSerializer(user_profile[0])
         return Response(data=serializer.data, status=status.HTTP_200_OK)
     
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 403:"Not permitted", 500:'failed'},
                         request_body=openapi.Schema
                         (
                             type=openapi.TYPE_OBJECT,
@@ -161,8 +172,11 @@ class SingleUserView(APIView):
                             required=['email', 'password', "name", "group", "is_staff"]
                         ))
     def put(self, request, id=None):
-        if request.user == AnonymousUser:
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and request.user.id != id:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_profile = UPM.get(id=id)[0]
@@ -175,13 +189,14 @@ class SingleUserView(APIView):
             return Response(serializer.validated_data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
-    @swagger_auto_schema(responses={204: "success", 403:"Not permitted", 404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={204: "success", 401:"unauthorized", 403:"Not permitted", 404:"Not found", 500:'failed'})
     
     def delete(self, request, id=None):
-        if request.user == AnonymousUser:
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and request.user.id != id:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        if request.user == AnonymousUser:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user_profile = UPM.get(id=id)
@@ -190,7 +205,7 @@ class SingleUserView(APIView):
         user_profile.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 403:"Not permitted", 500:'failed'},
                         request_body=openapi.Schema
                         (
                             type=openapi.TYPE_OBJECT,
@@ -208,7 +223,9 @@ class SingleUserView(APIView):
                         ))
     
     def patch(self, request, id=None):
-        if request.user == AnonymousUser:
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and request.user.id != id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -224,7 +241,7 @@ class SingleUserView(APIView):
     
 class TasksView(APIView):
     # permission_classes
-    @swagger_auto_schema(responses={201: "created", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 401:"unauthorized", 403:"Not permitted", 500:'failed'},
                     request_body=openapi.Schema
                     (
                         type=openapi.TYPE_OBJECT,
@@ -241,7 +258,9 @@ class TasksView(APIView):
                         required=["filename", "theme"]
                     ))
     def post(self, request):
-        if request.user == AnonymousUser or request.user.grup != 'Teacher':
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = TasksSerializer(data=request.data)
         if serializer.is_valid():
@@ -252,15 +271,21 @@ class TasksView(APIView):
 
  
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    @swagger_auto_schema(responses={200: "success", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 500:'failed'})
     def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         tasks = TM.get()
         serializer = TasksSerializer(tasks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class SingleTaskView(APIView):
-    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 404:"Not found", 500:'failed'})
     def get(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
+            return Response(status=status.HTTP_403_FORBIDDEN)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         task = TM.get(id)
@@ -269,9 +294,11 @@ class SingleTaskView(APIView):
         serializer = TasksSerializer(task[0])
         return Response(data=serializer.data, status=status.HTTP_200_OK)
     
-    @swagger_auto_schema(responses={200: "success",403:"Not permitted", 404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success",401:"unauthorized", 403:"Not permitted", 404:"Not found", 500:'failed'})
     def delete(self, request, id):
-        if request.user == AnonymousUser or request.user.grup != "Teacher":
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
             return Response(status=status.HTTP_403_FORBIDDEN)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -283,7 +310,7 @@ class SingleTaskView(APIView):
  
            
 class TaskPacksView(APIView):
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 403:"Not permitted", 500:'failed'},
                     request_body=openapi.Schema
                     (
                         type=openapi.TYPE_OBJECT,
@@ -317,7 +344,9 @@ class TaskPacksView(APIView):
                         required=["n", "duetime", "theme","group","maxgrade","mingrade"]
                     ))
     def post(self, request):
-        if request.user == AnonymousUser or request.user.grup != "Teacher":
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = TaskPacksSerializer(data=request.data, partial=True, context={"user":request.user})
         if serializer.is_valid():    
@@ -342,18 +371,21 @@ class TaskPacksView(APIView):
 
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={200: "success", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 500:'failed'})
     def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         taskpacks = TPM.get()
         print(taskpacks)
         serializer = TaskPacksModelSerializer(taskpacks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class SingleTaskPackView(APIView):
-    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 404:"Not found", 500:'failed'})
     def get(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         taskpack = TPM.get(id=id)
@@ -361,9 +393,11 @@ class SingleTaskPackView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = TaskPacksModelSerializer(taskpack[0])
         return Response(data=serializer.data, status=status.HTTP_200_OK)
-    @swagger_auto_schema(responses={200: "success", 403:"Not permitted", 404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 403:"Not permitted", 404:"Not found", 500:'failed'})
     def delete(self, request, id):
-        if request.user == AnonymousUser:
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
             return Response(status=status.HTTP_403_FORBIDDEN)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -374,7 +408,7 @@ class SingleTaskPackView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class SolutionsView(APIView):
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 500:'failed'},
                     request_body=openapi.Schema
                     (
                         type=openapi.TYPE_OBJECT,
@@ -392,8 +426,8 @@ class SolutionsView(APIView):
                         required=["taskpackid", "filename"]
                     ))
     def post(self, request):
-        if request.user == AnonymousUser or request.user.grup == 'Teacher':
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         serializer = SolutionsSerializer(data=request.data, context={"user":request.user})
         if serializer.is_valid():
             try:
@@ -412,15 +446,19 @@ class SolutionsView(APIView):
 
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
-    @swagger_auto_schema(responses={200: "success",500:'failed'})   
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 500:'failed'})   
     def get(self, request):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         solutio = SM.get()
         serializer = SolutionsModelSerializer(solutio, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)   
 
 class SingleSolutionView(APIView):
-    @swagger_auto_schema(responses={200: "success",404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={200: "success", 401:"unauthorized", 404:"Not found", 500:'failed'})
     def get(self, request, id):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         sol = SM.get(id=id)
@@ -429,10 +467,11 @@ class SingleSolutionView(APIView):
         serializer = SolutionsModelSerializer(sol[0])
         return Response(data=serializer.data, status=status.HTTP_200_OK)
     
-    @swagger_auto_schema(responses={204: "success",403:"Not permitted", 404:"Not found", 500:'failed'})
+    @swagger_auto_schema(responses={204: "success", 401:"unauthorized", 404:"Not found", 500:'failed'})
     def delete(self, request, id):
-        if request.user == AnonymousUser :
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         sol = SM.get(id=id)
@@ -441,7 +480,7 @@ class SingleSolutionView(APIView):
         sol.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-    @swagger_auto_schema(responses={201: "created", 400:"bad request", 403:"Not permitted", 500:'failed'},
+    @swagger_auto_schema(responses={201: "created", 400:"bad request", 401:"unauthorized", 403:"Not permitted", 500:'failed'},
                     request_body=openapi.Schema
                     (
                         type=openapi.TYPE_OBJECT,
@@ -455,7 +494,9 @@ class SingleSolutionView(APIView):
                         required=["grade"]
                     ))
     def patch(self, request, id):
-        if request.user == AnonymousUser:
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_staff and not request.user.grup != "Teacher":
             return Response(status=status.HTTP_403_FORBIDDEN)
         if id is None or id < 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)

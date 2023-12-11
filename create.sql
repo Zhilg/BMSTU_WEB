@@ -198,3 +198,12 @@ INSERT INTO LMS_TASKS VALUES
 (97, '97.txt', 'Philosophy'),
 (98, '98.txt', 'Literature'),
 (99, '99.txt', 'Philosophy');
+
+BEGIN;
+TRUNCATE "lms_tasks", "lms_taskpacks", "lms_solutionsmanager", "auth_user", "auth_user_groups", "auth_user_user_permissions", "django_admin_log", "django_content_type", "lms_taskpacksmanager", "lms_tasksmanager", "lms_solutions", "auth_group", "lms_taskpacks_tasks", "auth_permission", "auth_group_permissions", "django_session", "lms_userprofiles" RESTART IDENTITY;
+COMMIT;
+
+insert into lms_userprofiles VALUES
+(
+    1, 'password', '24/10/2023', 'email@domain.com', 'Putin', 'Teacher', true, true, true
+);
