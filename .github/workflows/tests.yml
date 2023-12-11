@@ -35,7 +35,7 @@ jobs:
   
     - name: Set up PostgreSQL
       run: |
-        psql -U postgres -c "CREATE DATABASE my database"
+        psql -U postgres -c "CREATE DATABASE postgres"
   
     - name: Run database migrations
       run: |
