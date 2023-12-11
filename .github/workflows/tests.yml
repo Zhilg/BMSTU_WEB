@@ -51,4 +51,9 @@ jobs:
       run: |
         cd bd_course
         python manage.py test lms.taskpacks_tests
+          
+    - name: Run userprofiles tests
+      run: |
+        cd bd_course
+        python manage.py test lms.userprofiles_tests
   
