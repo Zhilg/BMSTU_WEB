@@ -43,7 +43,7 @@ jobs:
     - name: Run solution tests
       run: |
         cd bd_course
-        python manage.py test lms.solution_tests
+        python manage.py test lms.solutions_tests
   
     - name: Run taskpacks tests
       run: |
