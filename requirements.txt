@@ -1,3 +1,4 @@
 Django
 drf_yasg
 django_tables2
+psycopg
