@@ -2,3 +2,4 @@ Django
 drf_yasg
 django_tables2
 psycopg2
+drf_spectacular
