@@ -32,7 +32,18 @@ DEBUG = True
 
 STATIC_ROOT = '../static'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'localhost:8888']
+
+USE_X_FORWARDED_HOST = True
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", 'http')
+
+SESSION_COOKIE_DOMAIN = None
+CSRF_COOKIE_DOMAIN = None
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
 
 # Application definition
@@ -47,20 +58,26 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "rest_framework",
-    "drf_yasg"
+    "drf_yasg",
+    'corsheaders'
 ]
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware'
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'bd_course.urls'
 
@@ -162,7 +179,13 @@ AUTHENTICATION_BACKENDS = ['lms.backends.EmailBackend',
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': "drf_spectacular.openapi.AutoSchema",
     'DEFAULT_API_TITLE': 'My LMS API',
-    'DEFAULT_API_VERSION': "1.0.0"
+    'DEFAULT_API_VERSION': "1.0.0",
+    'DEFAULT_AUTHENTICATION_CLASSES': 
+        [
+            "rest_framework.authentication.SessionAuthentication",
+    #         'rest_framework.authentication.TokenAuthentication'
+        ],
+    "DEFAULT_RENDERER_CLASSES":['rest_framework.renderers.JSONRenderer']
 }
 
 SPECTACULAR_SETTINGS = {

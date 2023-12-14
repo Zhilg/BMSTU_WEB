@@ -6,6 +6,8 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 from lms.responses import *
 from django.contrib.auth import logout
 from drf_yasg.utils import swagger_auto_schema
@@ -37,6 +39,7 @@ class UserLoginView(APIView):
     def post(self, request):        
         serializer = UserAuthSerializer(data=request.data, context={"request":request})
         if serializer.is_valid():
+            user = serializer.validated_data['user']
             return Response({'message': 'Успешный вход в систему.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -183,7 +186,6 @@ class SingleUserView(APIView):
         if not user_profile:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = UserProfilesSerializer(instance=user_profile,data=request.data, partial=True)
-        print(request.data)
         if serializer.is_valid():
             serializer.update()
             return Response(serializer.validated_data, status=status.HTTP_204_NO_CONTENT)
@@ -377,7 +379,6 @@ class TaskPacksView(APIView):
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         taskpacks = TPM.get()
-        print(taskpacks)
         serializer = TaskPacksModelSerializer(taskpacks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     

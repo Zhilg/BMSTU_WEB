@@ -75,14 +75,12 @@ class TasksManager(BaseManag, models.Model):
         
     def create(self, form):
         query = self.rep.get(form['filename'])
-        print(query)
         if query.__len__():
             raise FileAlreadyExists
         return self.rep.insert(form)
     
     def get(self, filename=None, id=None):
         query = self.rep.get(filename, id)
-        print(query)
         return query
         
         
@@ -95,8 +93,6 @@ class TaskPacksManager(BaseManag, models.Model):
             
     def get(self, user=None, id=None):
         if id:
-            print(id)
-            print(self.rep.get(id=id))
             return self.rep.get(id=id)
         if not user:
             return self.rep.get()

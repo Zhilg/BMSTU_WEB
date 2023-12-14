@@ -36,7 +36,6 @@ class UserProfilesRepository(BaseRep):
             instance.save()
             return instance
         else:
-            print(instance.password)
             raise ValueError
     
     def insert(self, form, **extra_fields):

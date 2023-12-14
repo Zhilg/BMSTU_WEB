@@ -1,48 +1,49 @@
 from django.test import TestCase
-from lms.boot import *
+from lms.tests.builder import *
 from lms.exceptions import *
 from datetime import date
+from unittest.mock import MagicMock
 
 class SolutionsTests(TestCase):
     def setUp(self):
-        form1 = {"n" : 1, "group" : "IU7-61B", "theme" : "Mathematics", "duetime" : date.today(), 'maxgrade':10, "mingrade":1}
-        form2 = {'email' : '124@mail.ru', "password" : "asdasdasd", "username" : "bruh", "grup" : "Teacher"}
-        teacher = UPM.create(form=form2)
+        self.user = UserBuilder.create_student()
+        self.another_user = UserBuilder.create_student2()
         
-        form2 = {'email' : '125@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "grup" : "IU7-61B"}
-        self.user = UPM.create(form=form2)
-        
-        form = {"filename" : "asdasdd.txt", "theme" : "Mathematics"}
-        TM.create(form)
-        
-        self.taskpack = TPM.create(form1, teacher)
+        self.taskpack = TaskPackBuilder.create()
         
         self.test_form_1 = {"filename" : "a.txt", "taskpackid" : self.taskpack[0].id}
-        self.test_form_2 = {"filename" : "a.txt", "taskpackid" : self.taskpack[0].id}
+        
+        self.test_form_5 = {"filename" : "a2.txt", "taskpackid" : self.taskpack[0].id}
+        self.test_form_2 = {"filename" : "d.txt", "taskpackid" : self.taskpack[0].id}
         self.test_form_3 = {"filename" : "b.txt", "taskpackid" : 1000}
         self.test_form_4 = {"filename" : "c.txt", "taskpackid" : self.taskpack[0].id}
         
     def test_create_solution(self):
+        print('create_solution')
         solution = SM.create(self.user, self.test_form_1)
+
         self.assertIsInstance(solution, SM.rep.model)
         
+    def test_create_solution_mock_london(self):
+        testSM = SolutionsManager()
+        teacher = UserBuilder.create_teacher2()
+        exp_res = Solutions(filename=self.test_form_5['filename'], taskpack=self.taskpack[0], student=self.user, teacher=teacher)
+        testSM.create = MagicMock(return_value=exp_res)
+        result = testSM.create(form=self.test_form_5, user=teacher)
+        self.assertEqual(exp_res, result)
+        
     def test_file_exists(self):
-        try:
+        print('file_already_exists')
+        SM.create(self.user, self.test_form_2)
+        with self.assertRaises(FileAlreadyExists):
             SM.create(self.user, self.test_form_2)
-        except FileAlreadyExists:
-            self.assertTrue(True)
             
     def test_no_taskpack(self):
-        try:
+        print('no_taskpack')
+        with self.assertRaises(NoSuchTaskPacks):
             SM.create(self.user, self.test_form_3)
-        except NoSuchTaskPacks:
-            self.assertTrue(True)
             
     def test_wrong_taskpack(self):
-        form = {'email' : '126@mail.ru', "password" : "asdasdasd", "username" : "bruh2", "grup" : "IU7-71B"}
-        user = UPM.create(form=form)
-        try:
-            SM.create(user, self.test_form_4)
-        except WrongTaskPackID:
-            self.assertTrue(True)
-        
+        print('wrong_taskpack')
+        with self.assertRaises(WrongTaskPackID):
+            SM.create(self.another_user, self.test_form_4)
