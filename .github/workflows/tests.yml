@@ -54,4 +54,9 @@ jobs:
       run: |
         cd bd_course
         python manage.py test lms.tests.userprofiles_tests
+                  
+    - name: Run e2e test
+      run: |
+        cd bd_course
+        python manage.py test lms.tests.e2e
   
