@@ -21,7 +21,6 @@ class SolutionsTests(TestCase):
     def test_create_solution(self):
         print('create_solution')
         solution = SM.create(self.user, self.test_form_1)
-
         self.assertIsInstance(solution, SM.rep.model)
         
     def test_create_solution_mock_london(self):

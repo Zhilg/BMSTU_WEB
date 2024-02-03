@@ -16,6 +16,7 @@ password - admin
 
 from pathlib import Path
 from os import environ
+from psycopg2 import extensions
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,7 +33,7 @@ DEBUG = True
 
 STATIC_ROOT = '../static'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'localhost:8888']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'localhost:8888', 'app_mirror', 'app_read', '0.0.0.0']
 
 USE_X_FORWARDED_HOST = True
 
@@ -103,16 +104,7 @@ WSGI_APPLICATION = 'bd_course.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': '12345',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+
 
 if environ.get("GITHUB_WORKFLOW"):
     
@@ -126,6 +118,29 @@ if environ.get("GITHUB_WORKFLOW"):
             'PORT': '5432',
         }
     }
+else:
+    DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': '12345',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+    }
+    # print(argc)
+    # if '8000' not in environ.get('SERVER_PORT', ''):
+    #         DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'postgres',
+    #     'USER': 'rou',
+    #     'PASSWORD': '12345',
+    #     'HOST': 'localhost',
+    #     'PORT': '5432',
+    # }
+    # }
 
 
 

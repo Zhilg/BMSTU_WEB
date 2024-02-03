@@ -82,6 +82,10 @@ class TasksManager(BaseManag, models.Model):
     def get(self, filename=None, id=None):
         query = self.rep.get(filename, id)
         return query
+    
+    def delete(self, filename):
+        file = self.rep.get(filename)
+        file.delete()
         
         
 class TaskPacksManager(BaseManag, models.Model):

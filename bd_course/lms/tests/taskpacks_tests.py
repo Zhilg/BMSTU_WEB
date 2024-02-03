@@ -59,11 +59,9 @@ class TaskPacksTests(TestCase):
             
     def test_create_taskpack(self):
         print('create')
-        try:
-            TPM.create(form=self.form6)
-        except Exception:
-            pass
-        self.assertIsNotNone(TPM.get(user=self.user))
+        tm = TPM.create(form=self.form6, user=self.user)
+
+        self.assertEqual(TPM.get(user=self.user)[0], tm[0])
     
     
          
