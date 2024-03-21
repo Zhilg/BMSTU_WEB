@@ -1,7 +1,0 @@
-Заходишь в папку bd_course ПЕРВУЮ, НЕ ВТОРУЮ
-пишешь python3 manage.py makemigrations
-пишешь python3 manage.py migrate
-пишешь python3 manage.py runserver 
-сервак запустился кайфуешь хайпуешь
-если хочешь вручную запустить тесты пишешь 
-python3 manage.py test lms.tests.{имя_файла_без_py}
